@@ -64,10 +64,11 @@ def format_rupiah(x):
     except:
         return "Rp 0"
 
+gdf["os_loan_created_rp"] = gdf["os_loan_created"].apply(format_rupiah)
 gdf["os_potensi_ktp_rp"] = gdf["os_potensi_ktp"].apply(format_rupiah)
 gdf["os_potensi_usr_rp"] = gdf["os_potensi_usr"].apply(format_rupiah)
 gdf["os_potensi_rp"] = gdf["os_potensi"].apply(format_rupiah)
-gdf["os_loan_created_rp"] = gdf["os_loan_created"].apply(format_rupiah)
+
 
 # --- 4. Inisialisasi peta ---
 m = folium.Map(location=[-2.5, 118], zoom_start=5, tiles="CartoDB positron")
@@ -120,7 +121,7 @@ colormap.add_to(m)
 # --- Tambahkan Judul ---
 title_html = """
      <h3 align="center" style="font-size:20px">
-         <b>DATA LOAN_CREATED DAN REJECT AGUSTUS 2025</b>
+         <b>DATA LOAN_CREATED DAN REJECT SEPTEMBER 2025</b>
      </h3>
      """
 m.get_root().html.add_child(folium.Element(title_html))
