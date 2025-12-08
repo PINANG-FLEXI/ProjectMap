@@ -121,7 +121,7 @@ colormap.add_to(m)
 # --- Tambahkan Judul ---
 title_html = """
      <h3 align="center" style="font-size:20px">
-         <b>DATA LOAN_CREATED DAN REJECT SEPTEMBER 2025</b>
+         <b>DATA LOAN CREATED DAN REJECT NOVEMBER 2025</b>
      </h3>
      """
 m.get_root().html.add_child(folium.Element(title_html))
