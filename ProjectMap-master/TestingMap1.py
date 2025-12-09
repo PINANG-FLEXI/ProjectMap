@@ -5,6 +5,8 @@ import branca.colormap as cm
 from folium.plugins import Fullscreen
 import os
 from branca.element import Figure, Html, MacroElement
+import json
+
 
 
 # --- 1. Load shapefile ---
@@ -70,6 +72,39 @@ gdf["os_potensi_usr_rp"] = gdf["os_potensi_usr"].apply(format_rupiah)
 gdf["os_potensi_rp"] = gdf["os_potensi"].apply(format_rupiah)
 
 
+# --- 3b. Siapkan data untuk mini chart ---
+
+# Pastikan NaN jadi 0 biar aman
+gdf["total_loan_created"] = gdf["total_loan_created"].fillna(0)
+gdf["total_reject"] = gdf["total_reject"].fillna(0)
+
+# === Persiapan data untuk Mini Chart (Top 10) ===
+
+# Pastikan tidak ada NaN
+gdf["total_loan_created"] = gdf["total_loan_created"].fillna(0)
+gdf["total_reject"] = gdf["total_reject"].fillna(0)
+
+loan_sorted = (
+    gdf[["PROVINSI", "total_loan_created"]]
+    .dropna(subset=["PROVINSI"])
+    .sort_values("total_loan_created", ascending=False)
+    .head(10)   # <<< hanya top 10
+)
+
+reject_sorted = (
+    gdf[["PROVINSI", "total_reject"]]
+    .dropna(subset=["PROVINSI"])
+    .sort_values("total_reject", ascending=False)
+    .head(10)   # <<< hanya top 10
+)
+
+loan_labels = loan_sorted["PROVINSI"].tolist()
+loan_values = loan_sorted["total_loan_created"].astype(int).tolist()
+
+reject_labels = reject_sorted["PROVINSI"].tolist()
+reject_values = reject_sorted["total_reject"].astype(int).tolist()
+
+
 # --- 4. Inisialisasi peta ---
 m = folium.Map(location=[-2.5, 118], zoom_start=5, tiles="CartoDB positron")
 Fullscreen().add_to(m)
@@ -125,6 +160,135 @@ title_html = """
      </h3>
      """
 m.get_root().html.add_child(folium.Element(title_html))
+
+# --- 10. Tambahkan container untuk 2 mini chart (pojok kanan atas) ---
+
+chart_container = """
+<div id="chartBox" style="
+    position: fixed;
+    top: 120px;
+    right: 20px;
+    z-index: 9999;
+    width: 380px;
+    background: rgba(255,255,255,0.95);
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.25);
+    font-family: Arial;
+">
+
+    <!-- TOGGLE BUTTONS -->
+    <div style="text-align:center; margin-bottom:10px;">
+        <button id="btnLoan" onclick="showLoan()" style="
+            padding:6px 12px;
+            border-radius:6px;
+            border:1px solid #0275d8;
+            background:#0275d8;
+            color:white;
+            cursor:pointer;
+        ">Loan Created</button>
+
+        <button id="btnReject" onclick="showReject()" style="
+            padding:6px 12px;
+            border-radius:6px;
+            border:1px solid #d9534f;
+            background:transparent;
+            color:#d9534f;
+            cursor:pointer;
+        ">Reject</button>
+    </div>
+
+    <!-- LOAN CHART -->
+    <div id="loanSection" style="height:200px;">
+        <canvas id="loanChart"></canvas>
+    </div>
+
+    <!-- REJECT CHART -->
+    <div id="rejectSection" style="height:200px; display:none;">
+        <canvas id="rejectChart"></canvas>
+    </div>
+
+</div>
+"""
+
+m.get_root().html.add_child(folium.Element(chart_container))
+
+# --- 11. Script Chart.js untuk menggambar 2 mini chart ---
+
+chart_script = f"""
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+function showLoan() {{
+    document.getElementById("loanSection").style.display = "block";
+    document.getElementById("rejectSection").style.display = "none";
+
+    // aktifkan tombol
+    document.getElementById("btnLoan").style.background = "#0275d8";
+    document.getElementById("btnLoan").style.color = "white";
+
+    document.getElementById("btnReject").style.background = "transparent";
+    document.getElementById("btnReject").style.color = "#d9534f";
+}}
+
+function showReject() {{
+    document.getElementById("loanSection").style.display = "none";
+    document.getElementById("rejectSection").style.display = "block";
+
+    // aktifkan tombol reject
+    document.getElementById("btnReject").style.background = "#d9534f";
+    document.getElementById("btnReject").style.color = "white";
+
+    document.getElementById("btnLoan").style.background = "transparent";
+    document.getElementById("btnLoan").style.color = "#0275d8";
+}}
+
+const loanLabels = {json.dumps(loan_labels)};
+const loanData = {json.dumps(loan_values)};
+const rejectLabels = {json.dumps(reject_labels)};
+const rejectData = {json.dumps(reject_values)};
+
+// CHART LOAN
+new Chart(document.getElementById('loanChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{
+        labels: loanLabels,
+        datasets: [{{
+            label: 'Loan Created',
+            data: loanData,
+            backgroundColor: 'rgba(2,117,216,0.7)',
+        }}]
+    }},
+    options: {{
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        plugins: {{ legend: {{ display: false }} }}
+    }}
+}});
+
+// CHART REJECT
+new Chart(document.getElementById('rejectChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{
+        labels: rejectLabels,
+        datasets: [{{
+            label: 'Reject',
+            data: rejectData,
+            backgroundColor: 'rgba(217,83,79,0.7)',
+        }}]
+    }},
+    options: {{
+        indexAxis: 'y',
+        maintainAspectRatio: false,
+        plugins: {{ legend: {{ display: false }} }}
+    }}
+}});
+</script>
+"""
+
+m.get_root().html.add_child(folium.Element(chart_script))
+
+
 
 # --- 8. Simpan HTML ---
 m.save("index.html")
