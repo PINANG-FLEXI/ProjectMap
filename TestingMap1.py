@@ -76,3 +76,6 @@ m.save("index.html") # Pastikan Anda menyimpannya sebagai index.html
 file_path = "index.html"
 size_mb = os.path.getsize(file_path) / (1024*1024)
 print(f"Ukuran file HTML: {size_mb:.2f} MB")
+
+print(gdf[["PROVINSI", "total_os_loan_created"]])
+
