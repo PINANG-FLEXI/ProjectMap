@@ -291,7 +291,7 @@ function renderChart(labels, data, color) {{
             data: {{
                 labels: labels,
                 datasets: [{{
-                    label: 'Data',
+                    label: 'OS',
                     data: data,
                     backgroundColor: color
                 }}]
@@ -308,7 +308,7 @@ function renderChart(labels, data, color) {{
 }}
 
 function activateButton(active, btns) {{
-    btns.forEach(btn => {{
+    btns.forEach(btn => {{ 
         const el = document.getElementById(btn);
         el.style.background = "transparent";
         el.style.color = el.style.borderColor;
